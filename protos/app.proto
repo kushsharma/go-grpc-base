@@ -1,0 +1,25 @@
+syntax = "proto3";
+package protos;
+
+option java_multiple_files = true;
+option java_package = "com.github.kushsharma.go-grpc-base";
+option java_outer_classname = "ServerProto";
+option go_package = "github.com/kushsharma/go-grpc-base/protos";
+
+//import "google/protobuf/timestamp.proto";
+
+service RuntimeService {
+    rpc Ping(VersionRequest) returns (VersionResponse) {}
+}
+
+// service DeploymentService {
+//     rpc DeploySpecifications(DeploySpecificationsRequest) returns (DeploySpecificationsResponse) {}
+// }
+
+message VersionRequest {
+    string client_version = 1;
+}
+
+message VersionResponse {
+    string server_version = 1;
+}
