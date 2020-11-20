@@ -10,11 +10,8 @@ option go_package = "github.com/kushsharma/go-grpc-base/protos";
 
 service RuntimeService {
     rpc Ping(VersionRequest) returns (VersionResponse) {}
+    rpc DeploySpecifications(stream DeploySpecificationRequest) returns (stream DeploySpecificationResponse) {}
 }
-
-// service DeploymentService {
-//     rpc DeploySpecifications(DeploySpecificationsRequest) returns (DeploySpecificationsResponse) {}
-// }
 
 message VersionRequest {
     string client_version = 1;
@@ -22,4 +19,16 @@ message VersionRequest {
 
 message VersionResponse {
     string server_version = 1;
+}
+
+message DeploySpecificationRequest {
+    string dag = 1;
+    string table = 2;
+    map<string, string> task = 3;
+}
+
+message DeploySpecificationResponse {
+    bool succcess = 1;
+    string error = 2;
+    string id = 3;
 }

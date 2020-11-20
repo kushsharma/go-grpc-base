@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 
 	pb "github.com/kushsharma/go-grpc-base/protos"
@@ -42,6 +43,33 @@ func (sv *runtimeServiceServer) Ping(ctx context.Context, version *pb.VersionReq
 		ServerVersion: "1.0.0",
 	}
 	return response, nil
+}
+
+func (sv *runtimeServiceServer) DeploySpecifications(stream pb.RuntimeService_DeploySpecificationsServer) error {
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		log.Debug("request received for dag: ", in.Dag)
+
+		// process request
+		// ..
+		// push processing channel
+		// ..
+
+		// .. listen for processed channel
+		// send ack
+		if err := stream.Send(&pb.DeploySpecificationResponse{
+			Succcess: true,
+			Id:       in.Dag,
+		}); err != nil {
+			return err
+		}
+	}
 }
 
 func newRuntimeServiceServer() *runtimeServiceServer {

@@ -18,6 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RuntimeServiceClient interface {
 	Ping(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error)
+	DeploySpecifications(ctx context.Context, opts ...grpc.CallOption) (RuntimeService_DeploySpecificationsClient, error)
 }
 
 type runtimeServiceClient struct {
@@ -37,11 +38,43 @@ func (c *runtimeServiceClient) Ping(ctx context.Context, in *VersionRequest, opt
 	return out, nil
 }
 
+func (c *runtimeServiceClient) DeploySpecifications(ctx context.Context, opts ...grpc.CallOption) (RuntimeService_DeploySpecificationsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_RuntimeService_serviceDesc.Streams[0], "/protos.RuntimeService/DeploySpecifications", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &runtimeServiceDeploySpecificationsClient{stream}
+	return x, nil
+}
+
+type RuntimeService_DeploySpecificationsClient interface {
+	Send(*DeploySpecificationRequest) error
+	Recv() (*DeploySpecificationResponse, error)
+	grpc.ClientStream
+}
+
+type runtimeServiceDeploySpecificationsClient struct {
+	grpc.ClientStream
+}
+
+func (x *runtimeServiceDeploySpecificationsClient) Send(m *DeploySpecificationRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *runtimeServiceDeploySpecificationsClient) Recv() (*DeploySpecificationResponse, error) {
+	m := new(DeploySpecificationResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // RuntimeServiceServer is the server API for RuntimeService service.
 // All implementations must embed UnimplementedRuntimeServiceServer
 // for forward compatibility
 type RuntimeServiceServer interface {
 	Ping(context.Context, *VersionRequest) (*VersionResponse, error)
+	DeploySpecifications(RuntimeService_DeploySpecificationsServer) error
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
 
@@ -51,6 +84,9 @@ type UnimplementedRuntimeServiceServer struct {
 
 func (UnimplementedRuntimeServiceServer) Ping(context.Context, *VersionRequest) (*VersionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedRuntimeServiceServer) DeploySpecifications(RuntimeService_DeploySpecificationsServer) error {
+	return status.Errorf(codes.Unimplemented, "method DeploySpecifications not implemented")
 }
 func (UnimplementedRuntimeServiceServer) mustEmbedUnimplementedRuntimeServiceServer() {}
 
@@ -83,6 +119,32 @@ func _RuntimeService_Ping_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_DeploySpecifications_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(RuntimeServiceServer).DeploySpecifications(&runtimeServiceDeploySpecificationsServer{stream})
+}
+
+type RuntimeService_DeploySpecificationsServer interface {
+	Send(*DeploySpecificationResponse) error
+	Recv() (*DeploySpecificationRequest, error)
+	grpc.ServerStream
+}
+
+type runtimeServiceDeploySpecificationsServer struct {
+	grpc.ServerStream
+}
+
+func (x *runtimeServiceDeploySpecificationsServer) Send(m *DeploySpecificationResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *runtimeServiceDeploySpecificationsServer) Recv() (*DeploySpecificationRequest, error) {
+	m := new(DeploySpecificationRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 var _RuntimeService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "protos.RuntimeService",
 	HandlerType: (*RuntimeServiceServer)(nil),
@@ -92,6 +154,13 @@ var _RuntimeService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_Ping_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "DeploySpecifications",
+			Handler:       _RuntimeService_DeploySpecifications_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "protos/app.proto",
 }
