@@ -15,7 +15,7 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
       url: "https://github.com/kushsharma/go-grpc-base";
       description: "gRPC server with http proxy boilerplate";
     }
-    schemes: HTTPS;
+    schemes: HTTP;
 };
 
 service RuntimeService {
