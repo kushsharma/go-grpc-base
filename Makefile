@@ -11,43 +11,27 @@ EXECUTABLE="gbase"
 # first command used as the default one if only `make` is used
 all: build
 
-PROTOC_GEN_GO := $(GO_PATH)/bin/protoc-gen-go
-PROTOC := $(shell which protoc)
-# If protoc isn't on the path, set it to a target that's never up to date, so
-# the install command always runs.
-ifeq ($(PROTOC),)
-    PROTOC = must-rebuild
-endif
-
-# Figure out which machine we're running on.
-UNAME := $(shell uname)
-
-$(PROTOC):
-# Run the right installation command for the operating system.
-ifeq ($(UNAME), Darwin)
-	brew install protobuf
-endif
-ifeq ($(UNAME), Linux)
-	sudo apt-get install protobuf-compiler
-endif
-# You can add instructions for other operating systems here, or use different
-# branching logic as appropriate.
-
-# If $GOPATH/bin/protoc-gen-go does not exist, we'll run this command to install
-# it.
-$(PROTOC_GEN_GO):
-	@echo "> checking dependencies"
+install:
+	@echo "> installing dependencies"
 	go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
 	go get -u google.golang.org/grpc/cmd/protoc-gen-go-grpc
 	go get -u google.golang.org/grpc
+	go get -u github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
+	go get -u github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
+	go get -u github.com/bufbuild/buf/cmd/buf
 
-.PHONY: build test clean generate dist init build_linux build_mac
+.PHONY: build test clean generate dist init build_linux build_mac install generate
 
-app.pb.go: ./protos/app.proto | $(PROTOC_GEN_GO) $(PROTOC)
-	@echo "> building protos"
-	@protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative ./protos/app.proto
+generate:
+	@echo "> building assets"
+	@buf generate --path ./proto
 
-build: app.pb.go
+# app.pb.go: ./proto/api/v1/app.proto
+# 	@echo "> building protos"
+# 	@protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative ./proto/api/v1/app.proto
+
+# build: app.pb.go
+build: generate
 	@echo "> building binary"
 	@go build -ldflags "-X 'main.Version=${VERSION}' -X 'main.Build=${BUILD}' -X 'main.AppName=${EXECUTABLE}'" -o ${EXECUTABLE} ./main.go
 	@echo "> build complete"
@@ -56,7 +40,7 @@ run: build
 	@./${EXECUTABLE}
 
 clean:
-	@rm -rf ${EXECUTABLE} dist/ ./protos/*.pb.go
+	@rm -rf ${EXECUTABLE} dist/
 
 build_nix:
 	@env GOOS=linux GOARCH=amd64 go build -ldflags "-X 'main.Version=${VERSION}' -X 'main.Build=${BUILD}' -X 'main.AppName=${EXECUTABLE}'" -o ${EXECUTABLE} ./main.go

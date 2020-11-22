@@ -1,0 +1,56 @@
+syntax = "proto3";
+package v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "github.com/kushsharma/go-grpc-base/protos/api/v1";
+
+// These annotations are used when generating the OpenAPI file.
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+    info: {
+      version: "1.0";
+    };
+    external_docs: {
+      url: "https://github.com/kushsharma/go-grpc-base";
+      description: "gRPC server with http proxy boilerplate";
+    }
+    schemes: HTTPS;
+};
+
+service RuntimeService {
+    rpc Ping(VersionRequest) returns (VersionResponse) {
+        option (google.api.http) = {            
+            post: "/api/v1/ping"
+            body: "*"
+        };
+    }
+    rpc DeploySpecifications(stream DeploySpecificationRequest) returns (stream DeploySpecificationResponse) {}
+    rpc DeploySpecification(DeploySpecificationRequest) returns (DeploySpecificationResponse) {
+        option (google.api.http) = {
+            // Route to this method from POST requests to /api/v1/deploy
+            post: "/api/v1/deploy"
+            body: "*"
+        };
+    }
+}
+
+message VersionRequest {
+    string client_version = 1;
+}
+
+message VersionResponse {
+    string server_version = 1;
+}
+
+message DeploySpecificationRequest {
+    string dag = 1;
+    string table = 2;
+    map<string, string> task = 3;
+}
+
+message DeploySpecificationResponse {
+    bool succcess = 1;
+    string error = 2;
+    string id = 3;
+}

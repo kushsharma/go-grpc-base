@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 
-	pb "github.com/kushsharma/go-grpc-base/protos"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	pb "github.com/kushsharma/go-grpc-base/proto/api/v1"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -16,18 +18,39 @@ func initServer(conf Config) *cobra.Command {
 	thisCmd := &cobra.Command{
 		Use: "server",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			grpcAddr := fmt.Sprintf("localhost:%d", conf.ServerPort)
+			httpAddr := fmt.Sprintf("localhost:%d", conf.ServerPort+1)
 
-			lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", conf.ServerPort))
+			//create a tcp listener for grpc
+			lis, err := net.Listen("tcp", grpcAddr)
 			if err != nil {
 				log.Fatalf("failed to listen: %v", err)
 			}
-
-			var opts []grpc.ServerOption
-			grpcServer := grpc.NewServer(opts...)
+			grpcOpts := []grpc.ServerOption{}
+			grpcServer := grpc.NewServer(grpcOpts...)
+			// runtime service instance over gprc
 			pb.RegisterRuntimeServiceServer(grpcServer, newRuntimeServiceServer())
+			// start grpc server
+			go func() {
+				log.Fatal(grpcServer.Serve(lis))
+			}()
 
-			log.Info("starting server at ", conf.ServerPort)
-			return grpcServer.Serve(lis)
+			// prepare http proxy
+			ctx := context.Background()
+			ctx, cancel := context.WithCancel(ctx)
+			defer cancel()
+			httpOpts := []grpc.DialOption{
+				grpc.WithInsecure(),
+				grpc.WithBlock(),
+			}
+			mux := runtime.NewServeMux()
+			if err := pb.RegisterRuntimeServiceHandlerFromEndpoint(ctx, mux, grpcAddr, httpOpts); err != nil {
+				return err
+			}
+
+			log.Info("starting grpc server at ", grpcAddr)
+			log.Info("starting http proxy at ", httpAddr)
+			return http.ListenAndServe(httpAddr, mux)
 		},
 	}
 	return thisCmd

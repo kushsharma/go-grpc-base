@@ -6,14 +6,14 @@ import (
 	"io"
 	"time"
 
-	pb "github.com/kushsharma/go-grpc-base/protos"
+	pb "github.com/kushsharma/go-grpc-base/proto/api/v1"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
 
 const (
-	client_version = "0.0.1a"
+	clientVersion = "0.0.1a"
 )
 
 func initClient(conf Config) *cobra.Command {
@@ -37,7 +37,7 @@ func initClient(conf Config) *cobra.Command {
 
 			runtimeServiceClient := pb.NewRuntimeServiceClient(conn)
 			versionResponse, err := runtimeServiceClient.Ping(ctx, &pb.VersionRequest{
-				ClientVersion: client_version,
+				ClientVersion: clientVersion,
 			})
 			if err != nil {
 				return err
